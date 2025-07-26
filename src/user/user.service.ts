@@ -2,8 +2,8 @@ import {ConflictException, Injectable} from '@nestjs/common';
 import {Repository} from "typeorm";
 import {User} from "./user.entity";
 import {InjectRepository} from "@nestjs/typeorm";
-import {encodePassword} from "../utils/bcrypt";
-import {userDto} from "../types/dto/user.dto";
+import {encodeInformation} from "../utils/bcrypt";
+import {userDto, UserType} from "../types/dto/user.dto";
 
 @Injectable()
 export class UserService {
@@ -12,10 +12,10 @@ export class UserService {
         @InjectRepository(User) private readonly userRepository: Repository<User>
     ) {}
 
-    async createUser (dto: userDto) {
+    async createUser (dto: userDto): Promise<UserType> {
         await this.checkExisting(dto.email, dto.phoneNumber);
 
-        const hashedPassword = encodePassword(dto.password);
+        const hashedPassword = encodeInformation(dto.password);
 
         const user = this.userRepository.create({...dto, password: hashedPassword});
         await this.userRepository.save(user);
@@ -30,13 +30,20 @@ export class UserService {
         if (candidateByPhoneNumber) throw new ConflictException('Phone Number already used');
     }
 
-    private async findByEmail(email: string) {
+    async findByEmail(email: string) {
         return await this.userRepository.findOneBy({email})
     }
 
-    private async findByPhoneNumber(phoneNumber: string) {
+    async findByPhoneNumber(phoneNumber: string) {
         return await this.userRepository.findOneBy({phoneNumber})
     }
 
+    async findById(id: number) {
+        return await this.userRepository.findOneBy({id})
+    }
 
+    async storeRefreshToken(user: User | UserType, refreshToken: string) {
+        user.refreshToken = encodeInformation(refreshToken);
+        await this.userRepository.save(user);
+    }
 }
