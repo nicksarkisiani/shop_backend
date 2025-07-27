@@ -7,11 +7,13 @@ import {isInformationMatching} from "../utils/bcrypt";
 import {JwtPayload} from "../types/jwt/jwt";
 import {userDto, UserType} from "../types/dto/user.dto";
 import {TokensInterface} from "./types/auth.types";
+import {ConfigService} from "@nestjs/config";
 
 @Injectable()
 export class AuthService {
 
-    constructor(private readonly userService: UserService, private readonly jwtService: JwtService) {
+    constructor(private readonly userService: UserService, private readonly jwtService: JwtService,
+                private readonly configService: ConfigService) {
     }
 
     async registration(dto: userDto): Promise<TokensInterface> {
@@ -35,8 +37,8 @@ export class AuthService {
             sub: user.id
         }
 
-        const accessToken = this.jwtService.sign(payload, {secret: process.env.JWT_SECRET});
-        const refreshToken = this.jwtService.sign(payload, {secret: process.env.JWT_SECRET, expiresIn: process.env.JWT_EXPIRATION_RESFRESH_TOKEN});
+        const accessToken = this.jwtService.sign(payload, {secret: this.configService.get<string>("JWT_SECRET")});
+        const refreshToken = this.jwtService.sign(payload, {secret: this.configService.get<string>("JWT_SECRET"), expiresIn: this.configService.get<string>("JWT_EXPIRATION_REFRESH_TOKEN")});
 
         return {accessToken, refreshToken};
     }

@@ -5,9 +5,14 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {JwtModule} from "@nestjs/jwt";
+import {User} from "./user/user.entity";
+import {ConfigModule} from "@nestjs/config";
 
 @Module({
   imports: [AuthModule, UserModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
   TypeOrmModule.forRoot({
     type: 'postgres',
     host: 'localhost',
@@ -15,7 +20,7 @@ import {JwtModule} from "@nestjs/jwt";
     username: 'postgres',
     password: 'root',
     database: 'shop',
-    entities: [],
+    entities: [User],
     synchronize: true,
   }),
   JwtModule.register({
