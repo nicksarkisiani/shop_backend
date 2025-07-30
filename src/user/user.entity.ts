@@ -1,4 +1,5 @@
-import {Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn} from "typeorm";
+import {Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn} from "typeorm";
+import {Token} from "../token/token.entity";
 
 @Entity('user')
 export class User {
@@ -21,8 +22,8 @@ export class User {
     @Column({type: 'varchar'})
     password: string;
 
-    @Column({type: 'varchar', nullable: true, default: null})
-    refreshToken: string
+    @OneToMany(() => Token, (token) => token.user, {onDelete: 'CASCADE' })
+    tokens: Token[];
 
     @Column({ default: false })
     isEmailVerified: boolean;

@@ -7,6 +7,11 @@ import {TypeOrmModule} from "@nestjs/typeorm";
 import {JwtModule} from "@nestjs/jwt";
 import {User} from "./user/user.entity";
 import {ConfigModule} from "@nestjs/config";
+import { TokenModule } from './token/token.module';
+import {Token} from "./token/token.entity";
+import {ScheduleModule} from "@nestjs/schedule";
+import { SchedulerModule } from './scheduler/scheduler.module';
+import { TokenCleanupService } from './scheduler/token-cleanup.service';
 
 @Module({
   imports: [AuthModule, UserModule,
@@ -20,17 +25,20 @@ import {ConfigModule} from "@nestjs/config";
     username: 'postgres',
     password: 'root',
     database: 'shop',
-    entities: [User],
+    entities: [User, Token],
     synchronize: true,
   }),
   JwtModule.register({
     global: true,
     secret: process.env.JWT_SECRET,
     signOptions: {expiresIn: process.env.JWT_EXPIRATION_ACCESS_TOKEN}
-  })
+  }),
+    TokenModule,
+  ScheduleModule.forRoot(),
+  SchedulerModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, TokenCleanupService],
 })
 export class AppModule {}
 
