@@ -42,8 +42,4 @@ export class UserService {
         return await this.userRepository.findOneBy({id})
     }
 
-    async storeRefreshToken(user: User | UserType, refreshToken: string) {
-        user.refreshToken = encodeInformation(refreshToken);
-        await this.userRepository.save(user);
-    }
 }

@@ -8,12 +8,14 @@ import {JwtPayload} from "../types/jwt/jwt";
 import {userDto, UserType} from "../types/dto/user.dto";
 import {TokensInterface} from "./types/auth.types";
 import {ConfigService} from "@nestjs/config";
+import {TokenService} from "../token/token.service";
 
 @Injectable()
 export class AuthService {
 
     constructor(private readonly userService: UserService, private readonly jwtService: JwtService,
-                private readonly configService: ConfigService) {
+                private readonly configService: ConfigService,
+                private readonly tokenService: TokenService) {
     }
 
     async registration(dto: userDto): Promise<TokensInterface> {
@@ -48,25 +50,37 @@ export class AuthService {
 
     private async returnAndUpdateTokens(user: User | UserType): Promise<TokensInterface> {
         const tokens = this.generateTokens(user);
-        if (tokens) await this.userService.storeRefreshToken(user, tokens.refreshToken)
+        if (tokens) await this.tokenService.createToken(tokens.refreshToken, user)
         return tokens;
     }
 
-    private async refreshTokens(refreshToken: string) {
+    async refreshTokens(refreshToken: string) {
+        const user = await this.validateRefreshToken(refreshToken);
+        return await this.returnAndUpdateTokens(user);
+    }
+
+
+    async logout(refreshToken: string) {
+        const user = await this.validateRefreshToken(refreshToken);
+        return await this.tokenService.clearToken(refreshToken, user);
+    }
+
+    private async validateRefreshToken(refreshToken: string): Promise<User> {
         try {
             const decoded: JwtPayload = this.jwtService.verify(refreshToken, {
-                secret: process.env.JWT_SECRET
+                secret: this.configService.get<string>("JWT_SECRET")
             });
+
             const user = await this.userService.findById(decoded.sub);
-            if (!user) throw new UnauthorizedException("User not found")
+            if (!user) throw new UnauthorizedException("User not found");
 
-            if (!isInformationMatching(refreshToken, user.refreshToken)) throw new UnauthorizedException("Refresh token is invalid")
+            if (!await this.tokenService.checkExisting(refreshToken, user)) {
+                throw new UnauthorizedException("Refresh token is invalid");
+            }
 
-            return await this.returnAndUpdateTokens(user);
+            return user;
         } catch (error) {
             throw new UnauthorizedException("Token is expired");
         }
     }
-
-
 }
